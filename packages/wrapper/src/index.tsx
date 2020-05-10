@@ -1,7 +1,10 @@
 import * as React from 'react';
-import {Store, AnyAction, Action} from 'redux';
+import {Action, AnyAction, Store} from 'redux';
 import {NextComponentType, NextPageContext} from 'next';
-import {AppContext, AppProps} from 'next/app';
+import {AppProps} from 'next/app';
+import {NextRouter} from 'next/dist/next-server/lib/router/router';
+import {AppTreeType} from 'next/dist/next-server/lib/utils';
+import {Router} from 'next/dist/client/router';
 
 const defaultConfig = {
     storeKey: '__NEXT_REDUX_STORE__',
@@ -18,7 +21,7 @@ const withRedux = <S extends any = any, A extends Action = AnyAction>(makeStore:
 
     const isServer = typeof window === 'undefined';
 
-    const initStore = ({initialState, ctx}: InitStoreOptions): Store => {
+    const initStore = ({initialState, ctx}: InitStoreOptions<S, A>): Store<S, A> => {
         const {storeKey} = defaultedConfig;
 
         const createStore = () =>
@@ -43,7 +46,7 @@ const withRedux = <S extends any = any, A extends Action = AnyAction>(makeStore:
             /* istanbul ignore next */
             public static displayName = `withRedux(${App.displayName || App.name || 'App'})`;
 
-            public static getInitialProps = async (appCtx: AppContext) => {
+            public static getInitialProps = async (appCtx: ExtendedAppContext<S, A>) => {
                 /* istanbul ignore next */
                 if (!appCtx) throw new Error('No app context');
                 /* istanbul ignore next */
@@ -75,7 +78,7 @@ const withRedux = <S extends any = any, A extends Action = AnyAction>(makeStore:
                 };
             };
 
-            public constructor(props: WrappedAppProps, context: AppContext) {
+            public constructor(props: WrappedAppProps, context: ExtendedAppContext<S, A>) {
                 super(props, context);
 
                 const {initialState} = props;
@@ -89,7 +92,7 @@ const withRedux = <S extends any = any, A extends Action = AnyAction>(makeStore:
                 });
             }
 
-            protected store: Store;
+            readonly store: Store<S, A>;
 
             public render() {
                 const {initialProps, initialState, ...props} = this.props;
@@ -110,13 +113,16 @@ export interface Config {
     overrideIsServer?: boolean;
 }
 
-export type MakeStoreOptions = Config & NextPageContext;
+export type MakeStoreOptions<S = any, A extends Action = AnyAction> = Config & NextPageContext<S, A>;
 
-export declare type MakeStore = <S = any, A extends Action = AnyAction>(initialState: S, options: MakeStoreOptions) => Store<S, A>;
+export declare type MakeStore<S = any, A extends Action = AnyAction> = (
+    initialState: S,
+    options: MakeStoreOptions<S, A>,
+) => Store<S, A>;
 
-export interface InitStoreOptions {
-    initialState?: any;
-    ctx: NextPageContext;
+export interface InitStoreOptions<S extends any = any, A extends Action = AnyAction> {
+    initialState?: S;
+    ctx: NextPageContext<S, A>;
 }
 
 export interface WrappedAppProps {
@@ -143,6 +149,15 @@ export interface WrappedAppProps {
 export interface ReduxWrapperAppProps<S = any, A extends Action = AnyAction, P = {}> extends AppProps<P> {
     store: Store<S, A>;
 }
+
+export type ExtendedAppContextType<R extends NextRouter = NextRouter, S = any, A extends Action = AnyAction> = {
+    Component: NextComponentType<NextPageContext<S, A>>;
+    AppTree: AppTreeType;
+    ctx: NextPageContext<S, A>;
+    router: R;
+};
+
+export type ExtendedAppContext<S = any, A extends Action = AnyAction> = ExtendedAppContextType<Router, S, A>;
 
 declare module 'next/dist/next-server/lib/utils' {
     export interface NextPageContext<S = any, A extends Action = AnyAction> {
