@@ -10,7 +10,7 @@ const defaultConfig = {
     deserializeState: (state: any) => state,
 };
 
-export default (makeStore: MakeStore, config?: Config) => {
+const withRedux = <S extends any = any, A extends Action = AnyAction>(makeStore: MakeStore<S, A>, config?: Config) => {
     const defaultedConfig = {
         ...defaultConfig,
         ...config,
@@ -100,6 +100,8 @@ export default (makeStore: MakeStore, config?: Config) => {
         };
 };
 
+export default withRedux;
+
 export interface Config {
     serializeState?: (state: any) => any;
     deserializeState?: (state: any) => any;
@@ -110,7 +112,7 @@ export interface Config {
 
 export type MakeStoreOptions = Config & NextPageContext;
 
-export declare type MakeStore = (initialState: any, options: MakeStoreOptions) => Store;
+export declare type MakeStore = <S = any, A extends Action = AnyAction>(initialState: S, options: MakeStoreOptions) => Store<S, A>;
 
 export interface InitStoreOptions {
     initialState?: any;
